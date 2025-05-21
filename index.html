@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Harry Potter Infinity Run - Design Avançado</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap');
+
+  /* Reset & base */
+  * {
+    box-sizing: border-box;
+  }
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    background: #0a061b;
+    font-family: 'Cinzel', serif;
+    color: #f7eaca;
+    overflow: hidden;
+    user-select: none;
+  }
+  #game {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background: url('https://images.unsplash.com/photo-1602304726487-8d4294331470?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80') no-repeat center bottom;
+    background-size: cover;
+    filter: brightness(0.6) contrast(1.1);
+  }
+  /* Overlay dark tint for better contrast */
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.75) 10%, rgba(0,0,0,0.9) 70%);
+    z-index: 1;
+  }
+
+  /* Ground */
+  #ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 200%;
+    height: 100px;
+    background:
+      linear-gradient(90deg, #422b11 0%, #684723 50%, #422b11 100%);
+    box-shadow: inset 0 7px 12px #a67c39;
+    border-top-left-radius: 60px;
+    border-top-right-radius: 60px;
+    animation: ground-move 3s linear infinite;
+    z-index: 3;
+  }
+  @keyframes ground-move {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Scoreboard */
+  #scoreboard {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-weight: 700;
+    font-size: 2.6rem;
+    letter-spacing: 0.18em;
+    text-shadow:
+      0 0 5px #ffcc00,
+      0 0 8px #ffae00,
+      0 0 12px #cc8b00;
+    z-index: 10;
+    user-select: none;
+  }
+
+  /* Message */
+  #message {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #ffd633cc;
+    text-shadow: 0 0 8px #ffd633bb;
+    z-index: 10;
+    user-select: none;
+    transition: opacity 0.5s;
+  }
+
+  /* Player (wizard) */
+  #player {
+    position: absolute;
+    bottom: 100px;
+    left: 80px;
+    width: 60px;
+    height: 90px;
+    background: linear-gradient(135deg, #4b2e0f 40%, #6a4517 80%);
+    border-radius: 30px 30px 15px 15px;
+    box-shadow:
+      0 0 8px #b58528 inset,
+      0 15px 20px #301b00aa;
+    cursor: pointer;
+    z-index: 10;
+    transition: filter 0.3s;
+  }
+  /* Cloak */
+  #player::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 22px;
+    width: 18px;
+    height: 70px;
+    background: linear-gradient(145deg, #29220c 30%, #5e4a18 90%);
+    border-radius: 15px 15px 50px 50px;
+    box-shadow: 
+      0 0 20px #cda12a inset,
+      0 0 18px #b69c25 inset;
+    z-index: -1;
+  }
+  /* Face glow - magical */
+  #player .face-glow {
+    position: absolute;
+    top: 15px;
+    left: 14px;
+    width: 33px;
+    height: 27px;
+    background:
+      radial-gradient(circle at 50% 50%, #fff6c2, transparent 80%);
+    filter: drop-shadow(0 0 6px #ecbf3a);
+    border-radius: 60% 60% 60% 60% / 70% 70% 30% 30%;
+    animation: face-flicker 3.5s ease-in-out infinite;
+  }
+  @keyframes face-flicker {
+    0%, 100% { opacity: 1; filter: drop-shadow(0 0 10px #ffdf50);}
+    50% { opacity: 0.65; filter: drop-shadow(0 0 3px #f6de7d);}
+  }
+  /* Wizard hat */
+  #player .hat {
+    position: absolute;
+    top: -20px;
+    left: 12px;
+    width: 35px;
+    height: 40px;
+    background: linear-gradient(to right, #240d04, #682700);
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+    box-shadow:
+      0 0 10px 1px #b87a1d inset;
+    border-radius: 5px 5px 20px 20px;
+    filter: drop-shadow(0 0 4px #d99823);
+  }
+
+  /* Player jump animation */
+  .jump {
+    animation: jump-up 650ms ease forwards;
+  }
+  @keyframes jump-up {
+    0% { bottom: 100px; }
+    30% { bottom: 200px; }
+    50% { bottom: 230px; }
+    70% { bottom: 200px; }
+    100% { bottom: 100px; }
+  }
+
+  /* Obstacles */
+  .obstacle {
+    position: absolute;
+    bottom: 100px;
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    box-shadow: 0 0 12px #ea3a3a inset;
+    background: #b33030;
+    filter: drop-shadow(0 0 8px #ff3838);
+    z-index: 8;
+    transition: filter 0.3s, transform 0.3s;
+  }
+  /* Spell obstacle (blue magical orb) */
+  .obstacle.spell {
+    background:
+      radial-gradient(circle at center, #57c7ff 45%, #093a65 90%);
+    box-shadow:
+      0 0 15px #57c7ff inset,
+      0 0 18px #1db2ff;
+    filter: drop-shadow(0 0 10px #57c7ff);
+  }
+  /* Creature obstacle (green magical orb) */
+  .obstacle.creature {
+    background:
+      radial-gradient(circle at center, #70ff88 40%, #20551f 90%);
+    box-shadow:
+      0 0 15px #70ff88 inset,
+      0 0 16px #54d353;
+    filter: drop-shadow(0 0 10px #70ff88);
+    border-radius: 50% / 65%;
+  }
+
+  /* Add a subtle hover glow for obstacles when game paused */
+  .obstacle:hover {
+    filter: drop-shadow(0 0 15px #ffcc00);
+    transform: scale(1.1);
+  }
+
+  /* Start screen */
+  #start-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(14,10,23,0.88);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fdd835;
+    font-size: 2.6rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 25px;
+    z-index: 20;
+  }
+  #start-screen button {
+    margin-top: 30px;
+    font-size: 1.8rem;
+    background: #fdd835;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 30px;
+    color: #0b0700;
+    font-weight: 700;
+    box-shadow: 0 0 15px #fdd835;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s ease;
+  }
+  #start-screen button:hover,
+  #start-screen button:focus {
+    background: #d6af16;
+    outline: none;
+  }
+
+  /* Game over */
+  #game-over {
+    position: absolute;
+    inset: 0;
+    background: rgba(30, 4, 4, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 3rem;
+    color: #f44336;
+    font-weight: 800;
+    text-shadow: 0 0 10px #f44336bb;
+    z-index: 30;
+    user-select: none;
+  }
+  #game-over #final-score {
+    font-size: 2.2rem;
+    color: #ffc107;
+    margin-top: 18px;
+    text-shadow: 0 0 10px #ffc107bb;
+  }
+  #game-over button {
+    margin-top: 30px;
+    font-size: 1.8rem;
+    background: #c62828;
+    border: none;
+    padding: 16px 48px;
+    border-radius: 30px;
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 0 20px #f44336;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s ease;
+  }
+  #game-over button:hover,
+  #game-over button:focus {
+    background: #f44336;
+    outline: none;
+  }
+
+  /* Responsive scaling for smaller devices */
+  @media screen and (max-width: 480px) {
+    #scoreboard {
+      font-size: 1.8rem;
+      letter-spacing: 0.1em;
+    }
+    #message {
+      font-size: 1rem;
+    }
+    #player {
+      width: 45px;
+      height: 70px;
+      bottom: 90px;
+    }
+    .obstacle {
+      width: 38px;
+      height: 38px;
+      bottom: 90px;
+      border-radius: 12px;
+    }
+    #ground {
+      height: 70px;
+      border-radius: 40px 40px 0 0;
+    }
+  }
+</style>
+</head>
+<body>
+  <div id="game" tabindex="0" aria-label="Jogo infinito estilo Harry Potter">
+    <div id="overlay"></div>
+    <div id="scoreboard">Pontos: 0</div>
+    <div id="message" aria-live="polite"></div>
+    <div id="player" title="Jogador bruxo">
+      <div class="face-glow"></div>
+      <div class="hat"></div>
+    </div>
+    <div id="ground"></div>
+    <div id="start-screen" role="dialog" aria-modal="true">
+      <div>🧙‍♂️ Harry Potter Infinity Run 🏃‍♂️</div>
+      <div style="margin-top: 15px; font-weight: 500; font-size: 1.3rem;">
+        Pressione Espaço ou Clique para pular e evitar os obstáculos mágicos.
+      </div>
+      <button id="startBtn" aria-label="Iniciar jogo">Iniciar Jogo</button>
+    </div>
+    <div id="game-over" role="alertdialog" aria-modal="true" style="display:none;">
+      <div>Fim de jogo</div>
+      <div id="final-score"></div>
+      <button id="restartBtn" aria-label="Reiniciar jogo">Jogar novamente</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  const game = document.getElementById('game');
+  const player = document.getElementById('player');
+  const scoreboard = document.getElementById('scoreboard');
+  const message = document.getElementById('message');
+  const startScreen = document.getElementById('start-screen');
+  const startBtn = document.getElementById('startBtn');
+  const gameOverScreen = document.getElementById('game-over');
+  const finalScoreDisplay = document.getElementById('final-score');
+  const restartBtn = document.getElementById('restartBtn');
+  const groundHeight = 100;
+
+  let isJumping = false;
+  let score = 0;
+  let gameSpeed = 5;
+  let obstacles = [];
+  let obstacleSpawnTimer = 0;
+  let obstacleSpawnInterval = 2100; // ms
+  let gameRunning = false;
+  let difficultyStage = 1;
+  let messageTimer = 0;
+  let lastTime = 0;
+
+  // Thresholds for difficulty increase
+  const difficultyPointsThresholds = [60, 140, 280, 450, 700, 1100];
+
+  // Milestone messages
+  const milestoneMessages = {
+    60: "Você chegou no Nível 2! Obstáculos mais rápidos!",
+    140: "Nível 3 alcançado! Novos inimigos perigosos surgem!",
+    280: "Nível 4! Eles ficam mais rápidos e espertos!",
+    450: "Nível 5! Você é um verdadeiro mestre bruxo!",
+    700: "Nível 6! Desafios extremados, mantenha o foco!",
+    1100: "Nível Máximo! Não desista agora!",
+  };
+
+  // Audio context and beep for sound fx
+  let audioCtx;
+  function playBeep(freq = 440, duration = 100) {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    oscillator.start();
+    gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration / 1000);
+    oscillator.stop(audioCtx.currentTime + duration / 1000);
+  }
+
+  // Player jump logic
+  function jump() {
+    if (isJumping || !gameRunning) return;
+    isJumping = true;
+    player.classList.add('jump');
+    playBeep(900, 120);
+    setTimeout(() => {
+      player.classList.remove('jump');
+      isJumping = false;
+    }, 650);
+  }
+
+  // Create a new obstacle element and add it to obstacles
+  function createObstacle() {
+    const obs = document.createElement('div');
+    obs.classList.add('obstacle');
+    // Determine obstacle type dependent on difficulty
+    let type;
+    if (difficultyStage < 3) {
+      type = 'spell';
+    } else if (difficultyStage < 5) {
+      type = Math.random() < 0.5 ? 'spell' : 'creature';
+    } else {
+      const r = Math.random();
+      if (r < 0.4) type = 'creature';
+      else if (r < 0.7) type = 'spell';
+      else type = 'creature';
+    }
+    obs.classList.add(type);
+    obs.style.right = '-60px';
+    obs.style.bottom = groundHeight + 'px';
+    game.appendChild(obs);
+    obstacles.push({
+      el: obs,
+      xPos: -60,
+      width: 50,
+      height: 50,
+      type: type,
+      speed: gameSpeed
+    });
+  }
+
+  // Update obstacles locations and check collision
+  function updateObstacles(deltaTime) {
+    for (let i = obstacles.length-1; i >=0; i--) {
+      const obs = obstacles[i];
+      obs.xPos += obs.speed * (deltaTime / 16);
+      obs.el.style.right = obs.xPos + 'px';
+
+      // Remove if off screen
+      if (obs.xPos > window.innerWidth + 60) {
+        obs.el.remove();
+        obstacles.splice(i, 1);
+      } else {
+        if (detectCollision(player, obs.el)) {
+          endGame();
+          return;
+        }
+      }
+    }
+  }
+
+  // Collision detection (with forgiving player hitbox)
+  function detectCollision(playerEl, obstacleEl) {
+    const pRect = playerEl.getBoundingClientRect();
+    const oRect = obstacleEl.getBoundingClientRect();
+
+    // Use bottom half of player bounding box for collision to be fairer
+    const playerCollisionRect = {
+      left: pRect.left + pRect.width * 0.3,
+      right: pRect.right - pRect.width * 0.3,
+      top: pRect.top + pRect.height * 0.6,
+      bottom: pRect.bottom,
+    };
+    return !(
+      playerCollisionRect.right < oRect.left ||
+      playerCollisionRect.left > oRect.right ||
+      playerCollisionRect.bottom < oRect.top ||
+      playerCollisionRect.top > oRect.bottom
+    );
+  }
+
+  // Adjust difficulty based on score
+  function adjustDifficulty() {
+    for (let i = difficultyPointsThresholds.length-1; i>=0; i--) {
+      if (score >= difficultyPointsThresholds[i]) {
+        if (difficultyStage !== i+2) {
+          difficultyStage = i+2;
+          gameSpeed = 5 + 1.6*(difficultyStage -1);
+          obstacleSpawnInterval = Math.max(700, 2100 - 280*(difficultyStage -1));
+          showMessage(milestoneMessages[difficultyPointsThresholds[i]] || '');
+        }
+        break;
+      }
+    }
+  }
+
+  // Show message for 3 seconds
+  function showMessage(text) {
+    if (!text) {
+      message.style.opacity = '0';
+      setTimeout(()=>message.textContent='', 500);
+      return;
+    }
+    message.textContent = text;
+    message.style.opacity = '1';
+    clearTimeout(messageTimer);
+    messageTimer = setTimeout(()=>{
+      message.style.opacity = '0';
+      setTimeout(()=>message.textContent='', 500);
+    },3000);
+  }
+
+  // Main game loop
+  function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+
+    if (!gameRunning) return;
+
+    score += deltaTime * 0.025;
+    scoreboard.textContent = `Pontos: ${Math.floor(score)}`;
+
+    adjustDifficulty();
+
+    obstacleSpawnTimer += deltaTime;
+    if (obstacleSpawnTimer > obstacleSpawnInterval) {
+      createObstacle();
+      obstacleSpawnTimer = 0;
+    }
+
+    updateObstacles(deltaTime);
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Start game initializing all variables
+  function startGame() {
+    score = 0;
+    gameSpeed = 5;
+    difficultyStage = 1;
+    obstacleSpawnInterval = 2100;
+    obstacleSpawnTimer = 0;
+    message.textContent = '';
+    lastTime = 0;
+    gameRunning = true;
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+
+    obstacles.forEach(o => o.el.remove());
+    obstacles = [];
+
+    playBeep(600, 160);
+    requestAnimationFrame(gameLoop);
+  }
+  // End game, show game over screen and stop game loop
+  function endGame() {
+    gameRunning = false;
+    playBeep(180, 450);
+    finalScoreDisplay.textContent = `Você fez ${Math.floor(score)} pontos`;
+    gameOverScreen.style.display = 'flex';
+  }
+
+  // Input handlers for jump
+  window.addEventListener('keydown', e => {
+    if ((e.code === 'Space' || e.code === 'ArrowUp') && gameRunning) {
+      e.preventDefault();
+      jump();
+    }
+  });
+  window.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (gameRunning) jump();
+  }, { passive: false });
+
+  // Start and restart buttons listeners
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+
+  // Accessibility - focus container allowing keyboard controls
+  game.addEventListener('keydown', e => {
+    if ((e.code === 'Space' || e.code === 'ArrowUp') && gameRunning) {
+      e.preventDefault();
+      jump();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
+
